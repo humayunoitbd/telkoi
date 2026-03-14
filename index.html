@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ঝিনাইদহ জ্বালানি আপডেট</title>
+    
+    <!-- React & ReactDOM CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <!-- Babel CDN for processing JSX in browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide Icons (Using generic SVG strings for simplicity without a bundler) -->
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        /* Simple loader animation */
+        .loader { border-top-color: #10b981; animation: spinner 1.5s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-slate-50">
+
+    <!-- React App will be rendered here -->
+    <div id="root"></div>
+
+    <!-- Our React Application Code -->
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- Icon Components (Replacing Lucide Icons for vanilla HTML approach) ---
+        const MapPinIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-2 text-emerald-600"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>;
+        const FuelIcon = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="3" x2="15" y1="22" y2="22"></line><line x1="4" x2="14" y1="9" y2="9"></line><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"></path><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"></path></svg>;
+        const ThumbsUpIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 mr-2"><path d="M7 10v12"></path><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"></path></svg>;
+        const ThumbsDownIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 mr-2"><path d="M17 14V2"></path><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"></path></svg>;
+        const ClockIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 mr-1"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
+        const AlertTriangleIcon = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" x2="12" y1="9" y2="13"></line><line x1="12" x2="12.01" y1="17" y2="17"></line></svg>;
+        const RefreshIcon = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>;
+        const MessageCircleIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 mr-2 group-hover:scale-110 transition-transform"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>;
+        const MapIconSmall = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 mr-1"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" x2="9" y1="3" y2="18"></line><line x1="15" x2="15" y1="6" y2="21"></line></svg>;
+        const PlusCircleIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 mr-1.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" x2="12" y1="8" y2="16"></line><line x1="8" x2="16" y1="12" y2="12"></line></svg>;
+        const XIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><line x1="18" x2="6" y1="6" y2="18"></line><line x1="6" x2="18" y1="6" y2="18"></line></svg>;
+
+        const jhenaidahUpazilas = ['হরিণাকুণ্ডু', 'ঝিনাইদহ সদর', 'কালীগঞ্জ', 'শৈলকুপা', 'কোটচাঁদপুর', 'মহেশপুর'];
+
+        // নতুন এবং আপডেট করা পাম্পের লিস্ট
+        const fallbackPumps = [
+            // হরিণাকুণ্ডু
+            { id: 1, name: 'উজ্জল সাগর ফিলিং স্টেশন', area: 'হরিণাকুণ্ডু', lat: null, lng: null, mapsLink: 'https://maps.app.goo.gl/hUuA66gfiJpQyEYb9', yesVotes: 0, noVotes: 0, lastUpdated: new Date().toISOString() },
+            { id: 2, name: 'মেসার্স ভাই ভাই ফিলিং স্টেশন', area: 'হরিণাকুণ্ডু', lat: 23.6395, lng: 89.0558, yesVotes: 0, noVotes: 0, lastUpdated: new Date().toISOString() },
+            { id: 3, name: 'একতা ফিলিং স্টেশন', area: 'হরিণাকুণ্ডু', lat: 23.6450, lng: 89.0600, yesVotes: 0, noVotes: 0, lastUpdated: new Date().toISOString() },
+            
+            // ঝিনাইদহ সদর
+            { id: 4, name: 'তাজ ফিলিং স্টেশন (কেন্দ্রীয় বাস টার্মিনাল)', area: 'ঝিনাইদহ সদর', lat: 23.5450, lng: 89.1726, yesVotes: 0, noVotes: 0, lastUpdated: new Date().toISOString() },
+            { id: 5, name: 'সৃজনী ফিলিং স্টেশন (আরাপপুর)', area: 'ঝিনাইদহ সদর', lat: 23.5510, lng: 89.1780, yesVotes: 0, noVotes: 0, lastUpdated: new Date().toISOString() },
+            { id: 6, name: 'মেসার্স রেজাউল ইসলাম ফিলিং স্টেশন (হামদহ)', area: 'ঝিনাইদহ সদর', lat: 23.5350, lng: 89.1600, yesVotes: 0, noVotes: 0, lastUpdated: new Date().toISOString() },
+            { id: 7, name: 'আরিফ ফিলিং স্টেশন (হামদহ)', area: 'ঝিনাইদহ সদর', lat: 23.5360, lng: 89.1620, yesVotes: 0, noVotes: 0, lastUpdated: new Date().toISOString() },
+            { id: 8, name: 'মেসার্স শরিফুল ফিলিং স্টেশন', area: 'ঝিনাইদহ সদর', lat: 23.5400, lng: 89.1650, yesVotes: 0, noVotes: 0, lastUpdated: new Date().toISOString() },
+            { id: 9, name: 'মেসার্স রহমান ফিলিং স্টেশন', area: 'ঝিনাইদহ সদর', lat: 23.5380, lng: 89.1650, yesVotes: 0, noVotes: 0, lastUpdated: new Date().toISOString() },
+            
+            // কালীগঞ্জ
+            { id: 10, name: 'মোবারক ফিলিং স্টেশন', area: 'কালীগঞ্জ', lat: 23.4116, lng: 89.1364, yesVotes: 0, noVotes: 0, lastUpdated: new Date().toISOString() },
+            { id: 11, name: 'চিত্রা ফিলিং স্টেশন', area: 'কালীগঞ্জ', lat: 23.4150, lng: 89.1400, yesVotes: 0, noVotes: 0, lastUpdated: new Date().toISOString() },
+            
+            // শৈলকুপা
+            { id: 12, name: 'জেভি ফিলিং স্টেশন (গাড়াগঞ্জ)', area: 'শৈলকুপা', lat: 23.6900, lng: 89.2500, yesVotes: 0, noVotes: 0, lastUpdated: new Date().toISOString() },
+            { id: 13, name: 'গড়াই ফিলিং স্টেশন', area: 'শৈলকুপা', lat: 23.6931, lng: 89.2514, yesVotes: 0, noVotes: 0, lastUpdated: new Date().toISOString() },
+            { id: 14, name: 'মেসার্স বিশ্বাস ফিলিং স্টেশন', area: 'শৈলকুপা', lat: 23.6850, lng: 89.2450, yesVotes: 0, noVotes: 0, lastUpdated: new Date().toISOString() },
+            
+            // কোটচাঁদপুর
+            { id: 15, name: 'কপোতাক্ষ ফিলিং স্টেশন', area: 'কোটচাঁদপুর', lat: 23.4022, lng: 89.0142, yesVotes: 0, noVotes: 0, lastUpdated: new Date().toISOString() },
+            { id: 16, name: 'মিনা ফিলিং স্টেশন', area: 'কোটচাঁদপুর', lat: 23.4050, lng: 89.0180, yesVotes: 0, noVotes: 0, lastUpdated: new Date().toISOString() },
+            
+            // মহেশপুর
+            { id: 17, name: 'ভৈরব ফিলিং স্টেশন', area: 'মহেশপুর', lat: 23.3325, lng: 88.9133, yesVotes: 0, noVotes: 0, lastUpdated: new Date().toISOString() },
+            { id: 18, name: 'ভাইবোন ফিলিং স্টেশন', area: 'মহেশপুর', lat: 23.3350, lng: 88.9150, yesVotes: 0, noVotes: 0, lastUpdated: new Date().toISOString() }
+        ];
+
+        function App() {
+            const [selectedArea, setSelectedArea] = useState('হরিণাকুণ্ডু');
+            const [pumps, setPumps] = useState([]);
+            const [votedPumps, setVotedPumps] = useState(new Set()); 
+            const [isLoading, setIsLoading] = useState(true);
+            const [isVoting, setIsVoting] = useState(false);
+            
+            const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+            const [newPumpData, setNewPumpData] = useState({ name: '', lat: '', lng: '' });
+            const [isAddingPump, setIsAddingPump] = useState(false);
+
+            const fetchPumpsData = async () => {
+                setIsLoading(true);
+                try {
+                    const response = await fetch('/.netlify/functions/getPumps');
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    const data = await response.json();
+                    
+                    // API থেকে ডাটা না আসলে বা খালি থাকলে fallbackPumps দেখাবে
+                    if(data && data.length > 0) {
+                        setPumps(data);
+                    } else {
+                        setPumps(fallbackPumps);
+                    }
+                } catch (error) {
+                    console.error('API Error, using fallback data:', error);
+                    setPumps(fallbackPumps);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            useEffect(() => {
+                fetchPumpsData();
+            }, []);
+
+            const filteredPumps = pumps.filter((pump) => pump.area === selectedArea);
+
+            const handleVote = async (pumpId, isAvailable) => {
+                if (votedPumps.has(pumpId)) {
+                    alert('আপনি ইতিমধ্যে এই পাম্পের জন্য ভোট দিয়েছেন!');
+                    return;
+                }
+
+                setIsVoting(true);
+                try {
+                    const response = await fetch('/.netlify/functions/votePump', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ pumpId, isAvailable })
+                    });
+
+                    if (!response.ok) throw new Error('Vote failed');
+                    
+                    const updatedPump = await response.json();
+                    setPumps(pumps.map(pump => pump.id === pumpId ? updatedPump : pump));
+                    
+                } catch (error) {
+                    console.error('Voting error:', error);
+                    setPumps(pumps.map(pump => {
+                        if (pump.id === pumpId) {
+                            return {
+                                ...pump,
+                                yesVotes: isAvailable ? pump.yesVotes + 1 : pump.yesVotes,
+                                noVotes: !isAvailable ? pump.noVotes + 1 : pump.noVotes,
+                                lastUpdated: new Date().toISOString()
+                            };
+                        }
+                        return pump;
+                    }));
+                } finally {
+                    setVotedPumps(new Set([...votedPumps, pumpId]));
+                    setIsVoting(false);
+                }
+            };
+
+            const handleAddPumpSubmit = async (e) => {
+                e.preventDefault();
+                if (!newPumpData.name.trim()) return;
+
+                setIsAddingPump(true);
+                
+                const pumpPayload = {
+                    name: newPumpData.name,
+                    area: selectedArea, 
+                    lat: newPumpData.lat ? parseFloat(newPumpData.lat) : null,
+                    lng: newPumpData.lng ? parseFloat(newPumpData.lng) : null
+                };
+
+                try {
+                    const response = await fetch('/.netlify/functions/addPump', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(pumpPayload)
+                    });
+
+                    if (!response.ok) throw new Error('Failed to add pump');
+                    
+                    const addedPump = await response.json();
+                    setPumps([...pumps, addedPump]);
+                    
+                    alert('পাম্পটি সফলভাবে যুক্ত হয়েছে!');
+                    setIsAddModalOpen(false);
+                    setNewPumpData({ name: '', lat: '', lng: '' }); 
+                } catch (error) {
+                    console.error('Add pump error:', error);
+                    alert('দুঃখিত! পাম্পটি ডাটাবেজে যোগ করা সম্ভব হয়নি। আপনার API বা ডাটাবেজ কানেকশন চেক করুন।');
+                } finally {
+                    setIsAddingPump(false);
+                }
+            };
+
+            // ম্যাপ ওপেন করার আপডেট করা ফাংশন
+            const openGoogleMaps = (lat, lng, name, mapsLink) => {
+                // যদি সরাসরি লিংক দেওয়া থাকে (যেমন উজ্জল সাগর ফিলিং স্টেশনের জন্য)
+                if (mapsLink) {
+                    window.open(mapsLink, '_blank');
+                    return;
+                }
+                
+                // লিংক না থাকলে ল্যাটিটিউড-লঙ্গিটিউড বা নাম দিয়ে সার্চ করবে
+                const url = lat && lng 
+                    ? `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
+                    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + ', ' + selectedArea + ', Jhenaidah')}`;
+                window.open(url, '_blank');
+            };
+
+            const timeAgo = (dateString) => {
+                if (!dateString) return "অজানা সময়";
+                const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
+                let interval = seconds / 31536000;
+                if (interval > 1) return Math.floor(interval) + " বছর আগে";
+                interval = seconds / 2592000;
+                if (interval > 1) return Math.floor(interval) + " মাস আগে";
+                interval = seconds / 86400;
+                if (interval > 1) return Math.floor(interval) + " দিন আগে";
+                interval = seconds / 3600;
+                if (interval > 1) return Math.floor(interval) + " ঘণ্টা আগে";
+                interval = seconds / 60;
+                if (interval > 1) return Math.floor(interval) + " মিনিট আগে";
+                return Math.floor(seconds) + " সেকেন্ড আগে";
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col relative">
+                    <header className="bg-emerald-600 text-white p-4 shadow-md sticky top-0 z-20">
+                        <div className="max-w-3xl mx-auto flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                                <FuelIcon className="w-7 h-7" />
+                                <h1 className="text-xl md:text-2xl font-bold tracking-tight">ঝিনাইদহ জ্বালানি আপডেট</h1>
+                            </div>
+                            <div className="text-xs bg-emerald-700 px-3 py-1.5 rounded-full flex items-center shadow-inner cursor-pointer hover:bg-emerald-800 transition-colors" onClick={fetchPumpsData}>
+                                <AlertTriangleIcon className={`w-3.5 h-3.5 mr-1 text-yellow-300 ${isLoading ? 'animate-spin' : 'animate-pulse'}`} />
+                                {isLoading ? 'রিফ্রেশ হচ্ছে...' : 'লাইভ আপডেট'}
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="max-w-3xl mx-auto p-4 space-y-6 flex-grow w-full">
+                        <a href="https://chat.whatsapp.com/YOUR_GROUP_LINK_HERE" target="_blank" rel="noopener noreferrer" className="bg-green-500 hover:bg-green-600 text-white p-3 md:p-4 rounded-xl shadow-md flex items-center justify-center transition-all group">
+                            <MessageCircleIcon />
+                            <span className="text-sm md:text-base font-bold">লাইভ মতামতের জন্য হোয়াটসঅ্যাপ গ্রুপে যুক্ত হোন</span>
+                        </a>
+
+                        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm text-emerald-800 shadow-sm">
+                            <p><strong>প্রিয় ঝিনাইদহবাসী,</strong> তেলের বর্তমান সংকটে সঠিক তথ্য দিয়ে সবাইকে সাহায্য করুন। হরিণাকুণ্ডুসহ আপনার আশপাশের পাম্পে তেল পেলে বা না পেলে নিচে <strong>"হ্যাঁ/না"</strong> বাটনে ক্লিক করে আপডেট দিন।</p>
+                        </div>
+
+                        <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                            <h2 className="text-lg font-semibold mb-3 flex items-center text-slate-700">
+                                <MapPinIcon />
+                                আপনার উপজেলা নির্বাচন করুন
+                            </h2>
+                            <div>
+                                <select value={selectedArea} onChange={(e) => setSelectedArea(e.target.value)} className="w-full border-2 border-slate-200 rounded-lg p-3 bg-slate-50 text-slate-800 text-lg font-medium focus:ring-0 focus:border-emerald-500 outline-none transition-all cursor-pointer">
+                                    {jhenaidahUpazilas.map(upazila => <option key={upazila} value={upazila}>{upazila}</option>)}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-bold text-slate-800 border-l-4 border-emerald-500 pl-3">{selectedArea}-এর পাম্পসমূহ</h3>
+                                <div className="flex space-x-2">
+                                    <button onClick={() => setIsAddModalOpen(true)} className="text-sm flex items-center bg-emerald-50 border border-emerald-200 shadow-sm px-3 py-1.5 rounded-lg text-emerald-700 font-bold hover:bg-emerald-100 transition-colors">
+                                        <PlusCircleIcon />
+                                        নতুন যোগ করুন
+                                    </button>
+                                </div>
+                            </div>
+
+                            {isLoading ? (
+                                <div className="text-center bg-white p-10 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center">
+                                    <RefreshIcon className="w-10 h-10 text-emerald-500 animate-spin mb-3" />
+                                    <p className="text-slate-500 font-medium">পাম্পের তথ্য লোড হচ্ছে...</p>
+                                </div>
+                            ) : filteredPumps.length === 0 ? (
+                                <div className="text-center bg-white p-10 rounded-xl border border-dashed border-slate-300">
+                                    <FuelIcon className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                                    <p className="text-slate-500 mb-4">এই উপজেলায় এখনো কোনো পাম্পের তথ্য যোগ করা হয়নি।</p>
+                                    <button onClick={() => setIsAddModalOpen(true)} className="bg-emerald-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-emerald-600">প্রথম পাম্পটি যোগ করুন</button>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {filteredPumps.map((pump) => {
+                                        const totalVotes = pump.yesVotes + pump.noVotes;
+                                        const availabilityPercentage = totalVotes === 0 ? 0 : Math.round((pump.yesVotes / totalVotes) * 100);
+                                        const isAvailable = availabilityPercentage >= 50;
+
+                                        return (
+                                            <div key={pump.id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden transition-all hover:shadow-md hover:border-emerald-200">
+                                                <div className="p-5">
+                                                    <div className="flex justify-between items-start mb-3">
+                                                        <div className="pr-4">
+                                                            <h4 className="text-lg font-bold text-slate-900 leading-tight">{pump.name}</h4>
+                                                            <button onClick={() => openGoogleMaps(pump.lat, pump.lng, pump.name, pump.mapsLink)} className="text-sm text-blue-600 hover:text-blue-800 flex items-center mt-2 bg-blue-50 px-2 py-1 rounded-md transition-colors w-fit">
+                                                                <MapIconSmall /> ম্যাপে দেখুন
+                                                            </button>
+                                                        </div>
+                                                        <div className="shrink-0">
+                                                            <div className={`px-2.5 py-1 rounded-md text-xs font-bold border flex items-center ${isAvailable ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                                                                <div className={`w-2 h-2 rounded-full mr-1.5 ${isAvailable ? 'bg-green-500' : 'bg-red-500'} ${totalVotes > 0 && 'animate-pulse'}`}></div>
+                                                                {totalVotes === 0 ? 'তথ্য নেই' : (isAvailable ? 'তেল আছে' : 'তেল নেই')}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="mt-5 mb-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                                        <div className="flex justify-between text-xs mb-1.5">
+                                                            <span className="text-emerald-700 font-bold flex items-center"><ThumbsUpIcon className="w-3 h-3 mr-1" /> হ্যাঁ বলেছেন: {pump.yesVotes} জন</span>
+                                                            <span className="text-rose-600 font-bold flex items-center">না বলেছেন: {pump.noVotes} জন <ThumbsDownIcon className="w-3 h-3 ml-1" /></span>
+                                                        </div>
+                                                        <div className="w-full bg-slate-200 rounded-full h-3 flex overflow-hidden shadow-inner">
+                                                            <div className="bg-emerald-500 h-3 transition-all duration-700 ease-out" style={{ width: `${availabilityPercentage}%` }}></div>
+                                                            <div className="bg-rose-500 h-3 transition-all duration-700 ease-out" style={{ width: `${100 - availabilityPercentage}%` }}></div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="text-xs text-slate-400 flex items-center mt-3 justify-end">
+                                                        <ClockIcon /> শেষ আপডেট: {timeAgo(pump.lastUpdated)}
+                                                    </div>
+                                                </div>
+
+                                                <div className="bg-slate-50 p-4 border-t border-slate-100">
+                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                        <span className="text-sm font-semibold text-slate-700 text-center sm:text-left">আপনি কি এই পাম্পে তেল পেয়েছেন?</span>
+                                                        <div className="flex space-x-3 w-full sm:w-auto">
+                                                            <button onClick={() => handleVote(pump.id, true)} disabled={votedPumps.has(pump.id) || isVoting} className={`flex-1 sm:flex-none flex items-center justify-center px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${votedPumps.has(pump.id) ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:shadow-md'}`}>
+                                                                <ThumbsUpIcon /> হ্যাঁ
+                                                            </button>
+                                                            <button onClick={() => handleVote(pump.id, false)} disabled={votedPumps.has(pump.id) || isVoting} className={`flex-1 sm:flex-none flex items-center justify-center px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${votedPumps.has(pump.id) ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-rose-100 text-rose-700 hover:bg-rose-600 hover:text-white hover:shadow-md'}`}>
+                                                                <ThumbsDownIcon /> না
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </main>
+
+                    <footer className="w-full bg-white border-t border-slate-200 mt-auto py-5">
+                        <div className="max-w-3xl mx-auto text-center px-4">
+                            <p className="text-slate-600 text-sm font-medium">ডেভেলপড বাই <a href="https://fb.com/h.k.saif" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:text-emerald-700 hover:underline font-bold transition-colors">@ HUMAYUN KABIR</a></p>
+                        </div>
+                    </footer>
+
+                    {/* --- Add New Pump Modal --- */}
+                    {isAddModalOpen && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+                            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-[fadeIn_0.2s_ease-out]">
+                                <div className="bg-emerald-600 p-4 flex justify-between items-center text-white">
+                                    <h3 className="font-bold text-lg">নতুন পাম্প যোগ করুন</h3>
+                                    <button onClick={() => setIsAddModalOpen(false)} className="hover:bg-emerald-700 p-1 rounded-full transition-colors">
+                                        <XIcon />
+                                    </button>
+                                </div>
+                                <form onSubmit={handleAddPumpSubmit} className="p-5 space-y-4">
+                                    <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-100 text-sm text-emerald-800 mb-4">
+                                        উপজেলা: <strong>{selectedArea}</strong> (পরিবর্তন করতে চাইলে পেজের উপর থেকে উপজেলা পরিবর্তন করুন)
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 mb-1">পাম্পের নাম <span className="text-rose-500">*</span></label>
+                                        <input 
+                                            type="text" 
+                                            required 
+                                            placeholder="উদা: মেসার্স ভাই ভাই ফিলিং স্টেশন"
+                                            value={newPumpData.name}
+                                            onChange={(e) => setNewPumpData({...newPumpData, name: e.target.value})}
+                                            className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-semibold text-slate-700 mb-1">অক্ষাংশ (Latitude)</label>
+                                            <input 
+                                                type="number" 
+                                                step="any"
+                                                placeholder="23.6395"
+                                                value={newPumpData.lat}
+                                                onChange={(e) => setNewPumpData({...newPumpData, lat: e.target.value})}
+                                                className="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-slate-700 mb-1">দ্রাঘিমাংশ (Longitude)</label>
+                                            <input 
+                                                type="number" 
+                                                step="any"
+                                                placeholder="89.0558"
+                                                value={newPumpData.lng}
+                                                onChange={(e) => setNewPumpData({...newPumpData, lng: e.target.value})}
+                                                className="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                                            />
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-slate-500">অক্ষাংশ ও দ্রাঘিমাংশ জানা না থাকলে ফাঁকা রাখুন।</p>
+
+                                    <div className="pt-4 border-t border-slate-100 flex justify-end space-x-3">
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setIsAddModalOpen(false)}
+                                            className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg transition-colors"
+                                        >
+                                            বাতিল
+                                        </button>
+                                        <button 
+                                            type="submit" 
+                                            disabled={isAddingPump}
+                                            className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg shadow-sm transition-colors flex items-center disabled:opacity-70"
+                                        >
+                                            {isAddingPump ? <span className="w-5 h-5 rounded-full border-2 border-white border-t-transparent animate-spin mr-2"></span> : null}
+                                            {isAddingPump ? 'যোগ হচ্ছে...' : 'যুক্ত করুন'}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
